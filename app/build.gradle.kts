@@ -101,6 +101,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines.guava)
     implementation(libs.coil.kt)
     implementation(libs.kotlinx.serialization.json)
+    implementation("com.google.android.gms:play-services-ads:24.7.0")
 
     ksp(libs.hilt.compiler)
 
