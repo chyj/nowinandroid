@@ -74,9 +74,9 @@ class SplashActivity : AppCompatActivity() {
           secondsRemaining = 0
           counterTextView.text = "Done."
 
-          (application as MyApplication).showAdIfAvailable(
+          (application as NiaApplication).showAdIfAvailable(
             this@SplashActivity,
-            object : MyApplication.OnShowAdCompleteListener {
+            object : NiaApplication.OnShowAdCompleteListener {
               override fun onShowAdComplete() {
                 // Check if the consent form is currently on screen before moving to the main
                 // activity.
@@ -84,7 +84,7 @@ class SplashActivity : AppCompatActivity() {
                   startMainActivity()
                 }
               }
-            },
+            }
           )
         }
       }
@@ -99,7 +99,7 @@ class SplashActivity : AppCompatActivity() {
     // Set your test devices.
     MobileAds.setRequestConfiguration(
       RequestConfiguration.Builder()
-        .setTestDeviceIds(listOf(MyApplication.TEST_DEVICE_HASHED_ID))
+        .setTestDeviceIds(listOf(NiaApplication.TEST_DEVICE_HASHED_ID))
         .build()
     )
 
@@ -108,7 +108,7 @@ class SplashActivity : AppCompatActivity() {
       MobileAds.initialize(this@SplashActivity) {}
       runOnUiThread {
         // Load an ad on the main thread.
-        (application as MyApplication).loadAd(this@SplashActivity)
+        (application as NiaApplication).loadAd(this@SplashActivity)
       }
     }
 

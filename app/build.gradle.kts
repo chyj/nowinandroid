@@ -36,6 +36,7 @@ android {
 
         // Custom test runner to set up Hilt dependency graph
         testInstrumentationRunner = "com.google.samples.apps.nowinandroid.core.testing.NiaTestRunner"
+        multiDexEnabled = true
     }
 
     buildTypes {
@@ -92,8 +93,10 @@ dependencies {
     implementation(libs.androidx.compose.runtime.tracing)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
+    implementation(libs.androidx.appcompat)
     implementation(libs.androidx.hilt.navigation.compose)
     implementation(libs.androidx.lifecycle.runtimeCompose)
+    implementation(libs.androidx.multidex)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.profileinstaller)
     implementation(libs.androidx.tracing.ktx)
@@ -102,6 +105,7 @@ dependencies {
     implementation(libs.coil.kt)
     implementation(libs.kotlinx.serialization.json)
     implementation("com.google.android.gms:play-services-ads:24.7.0")
+    implementation("androidx.lifecycle:lifecycle-process:2.8.3")
 
     ksp(libs.hilt.compiler)
 

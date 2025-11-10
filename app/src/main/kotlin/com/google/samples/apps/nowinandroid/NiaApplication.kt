@@ -48,7 +48,11 @@ import java.util.Date
  * [Application] class for NiA
  */
 @HiltAndroidApp
-class NiaApplication : Application(), ImageLoaderFactory, MultiDexApplication(), Application.ActivityLifecycleCallbacks, DefaultLifecycleObserver {
+class NiaApplication :
+    MultiDexApplication(),
+    ImageLoaderFactory,
+    Application.ActivityLifecycleCallbacks,
+    DefaultLifecycleObserver {
     @Inject
     lateinit var imageLoader: dagger.Lazy<ImageLoader>
 
@@ -59,7 +63,7 @@ class NiaApplication : Application(), ImageLoaderFactory, MultiDexApplication(),
     private var currentActivity: Activity? = null
 
     override fun onCreate() {
-        super.onCreate()
+        super<MultiDexApplication>.onCreate()
         registerActivityLifecycleCallbacks(this)
         ProcessLifecycleOwner.get().lifecycle.addObserver(this)
         appOpenAdManager = AppOpenAdManager()
