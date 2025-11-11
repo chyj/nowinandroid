@@ -42,12 +42,19 @@
 
         <activity
             android:name=".SplashActivity"
+            android:noHistory="true"
             android:configChanges="uiMode"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".MainActivity"
+            android:configChanges="uiMode"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 
@@ -59,11 +66,6 @@
             </intent-filter>
         </activity>
 
-        <activity
-            android:name=".MainActivity"
-            android:exported="true">
-        </activity>
-
         <!-- Disable Firebase analytics by default. This setting is overwritten for the `prod`
         flavor -->
         <meta-data android:name="firebase_analytics_collection_deactivated" android:value="true" />
@@ -73,7 +75,7 @@
         ca-app-pub-3554230884415364~6501138828 -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713" />
+            android:value="ca-app-pub-3554230884415364~6501138828" />
         <!-- Firebase automatically adds the following property which we don't use so remove it -->
         <property
             android:name="android.adservices.AD_SERVICES_CONFIG"

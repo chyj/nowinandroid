@@ -30,7 +30,8 @@ plugins {
 
 android {
     defaultConfig {
-        applicationId = "com.google.samples.apps.nowinandroid"
+        // 修改为带广告版本的包名，可以与原版同时安装
+        applicationId = "com.google.samples.apps.nowinandroid.openad"
         versionCode = 8
         versionName = "0.1.2" // X.Y.Z; X = Major, Y = minor, Z = Patch level
 

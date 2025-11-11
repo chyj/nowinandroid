@@ -40,6 +40,7 @@ import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
+import com.google.android.gms.ads.ResponseInfo
 import com.google.android.gms.ads.appopen.AppOpenAd
 import com.google.android.gms.ads.appopen.AppOpenAd.AppOpenAdLoadCallback
 import java.util.Date
@@ -61,6 +62,28 @@ class NiaApplication :
 
     private lateinit var appOpenAdManager: AppOpenAdManager
     private var currentActivity: Activity? = null
+
+    /**
+     * 存储 AppOpenAd 加载成功后的响应数据
+     */
+    data class AppOpenAdResponseData(
+        val appOpenAd: AppOpenAd? = null,
+        val responseInfo: ResponseInfo? = null,
+        val adUnitId: String? = null,
+        val loadTime: Long = 0
+    )
+
+    /**
+     * 当前加载成功的广告响应数据
+     */
+    var currentAdResponseData: AppOpenAdResponseData? = null
+        private set
+
+    /**
+     * 最后一次加载失败的错误信息
+     */
+    var lastLoadError: LoadAdError? = null
+        private set
 
     override fun onCreate() {
         super<MultiDexApplication>.onCreate()
@@ -186,7 +209,26 @@ class NiaApplication :
           }
     
           isLoadingAd = true
-          val request = AdRequest.Builder().build()
+          // 构建 AdRequest，可以添加内容定位参数来影响广告匹配
+          val request = AdRequest.Builder()
+            // 1. 内容URL：指定当前页面或内容的URL，帮助AdMob匹配相关广告
+            // .setContentUrl("https://www.nowinandroid.apps.samples.google.com")
+            
+            // 2. 关键词：添加关键词来帮助AdMob匹配相关广告
+            // .addKeyword("android")
+            // .addKeyword("development")
+            // .addKeyword("news")
+            
+            // 3. 请求代理：标识请求来源（可选）
+            // .setRequestAgent("NowInAndroid-App")
+            
+            // 4. 邻居内容字符串：提供页面内容的文本描述（可选）
+            // .setNeighboringContentUrls(listOf("https://example.com"))
+            
+            // 注意：App Open Ad 通常不需要这些参数，因为这些参数主要用于
+            // Banner、Interstitial 等广告类型。App Open Ad 的广告内容主要由
+            // AdMob 后台的广告活动配置决定（如预订广告）。
+            .build()
           AppOpenAd.load(
             context,
             AD_UNIT_ID,
@@ -201,7 +243,84 @@ class NiaApplication :
                 appOpenAd = ad
                 isLoadingAd = false
                 loadTime = Date().time
-                Log.d(LOG_TAG, "onAdLoaded.")
+                
+                // 获取响应信息
+                val responseInfo = ad.responseInfo
+                val adUnitId = AD_UNIT_ID
+                
+                // 保存到应用单例
+                this@NiaApplication.currentAdResponseData = AppOpenAdResponseData(
+                    appOpenAd = ad,
+                    responseInfo = responseInfo,
+                    adUnitId = adUnitId,
+                    loadTime = loadTime
+                )
+                
+                // 打印详细日志
+                Log.d(LOG_TAG, "========== AppOpenAd Loaded Successfully ==========")
+                Log.d(LOG_TAG, "Package Name: ${context.packageName}")
+                Log.d(LOG_TAG, "AdUnitId: $adUnitId (Production Ad Unit)")
+                Log.d(LOG_TAG, "LoadTime: ${Date(loadTime)}")
+                Log.d(LOG_TAG, "Note: Using Production Ad Unit with Test Device - showing real ad creatives")
+                
+                responseInfo?.let { info ->
+                    // 打印完整的 ResponseInfo JSON（与官方示例一致）
+                    Log.d(LOG_TAG, "ResponseInfo: $info")
+                    
+                    Log.d(LOG_TAG, "ResponseId: ${info.responseId}")
+                    Log.d(LOG_TAG, "MediationAdapterClassName: ${info.mediationAdapterClassName}")
+                    
+                    // 尝试获取并打印 LoadedAdapterResponse（与官方示例一致）
+                    try {
+                        val loadedAdapterResponseMethod = info.javaClass.getMethod("getLoadedAdapterResponse")
+                        val loadedAdapterResponse = loadedAdapterResponseMethod.invoke(info)
+                        loadedAdapterResponse?.let { loaded ->
+                            try {
+                                val adSourceNameMethod = loaded.javaClass.getMethod("getAdSourceName")
+                                val adSourceName = adSourceNameMethod.invoke(loaded) as? String
+                                Log.d(LOG_TAG, "AdSourceName: ${adSourceName ?: ""}")
+                            } catch (e: Exception) {}
+                            
+                            try {
+                                val adSourceIdMethod = loaded.javaClass.getMethod("getAdSourceId")
+                                val adSourceId = adSourceIdMethod.invoke(loaded)
+                                Log.d(LOG_TAG, "AdSourceId: $adSourceId")
+                            } catch (e: Exception) {}
+                            
+                            try {
+                                val latencyMillisMethod = loaded.javaClass.getMethod("getLatencyMillis")
+                                val latencyMillis = latencyMillisMethod.invoke(loaded)
+                                Log.d(LOG_TAG, "LatencyMillis: $latencyMillis")
+                            } catch (e: Exception) {}
+                        }
+                    } catch (e: Exception) {
+                        // getLoadedAdapterResponse 方法不存在，忽略
+                    }
+                    
+                    // 打印所有适配器响应信息（包括详细信息）
+                    info.adapterResponses.forEachIndexed { index, adapterResponse ->
+                        Log.d(LOG_TAG, "AdapterResponse[$index]: ${adapterResponse.adapterClassName}")
+                        Log.d(LOG_TAG, "  - AdSourceName: ${adapterResponse.adSourceName}")
+                        
+                        // 尝试获取 AdSourceId（如果存在）
+                        try {
+                            val adSourceIdMethod = adapterResponse.javaClass.getMethod("getAdSourceId")
+                            val adSourceId = adSourceIdMethod.invoke(adapterResponse)
+                            Log.d(LOG_TAG, "  - AdSourceId: $adSourceId")
+                        } catch (e: Exception) {
+                            // getAdSourceId 方法不存在，忽略
+                        }
+                        
+                        Log.d(LOG_TAG, "  - LatencyMillis: ${adapterResponse.latencyMillis}ms")
+                        adapterResponse.adError?.let { error ->
+                            Log.d(LOG_TAG, "  - AdError: code=${error.code}, message=${error.message}")
+                        } ?: Log.d(LOG_TAG, "  - AdError: null")
+                    }
+                } ?: Log.w(LOG_TAG, "ResponseInfo is null")
+                
+                Log.d(LOG_TAG, "AppOpenAd Object: $ad")
+                Log.d(LOG_TAG, "==================================================")
+                
                 Toast.makeText(context, "onAdLoaded", Toast.LENGTH_SHORT).show()
               }
     
@@ -212,11 +331,85 @@ class NiaApplication :
                */
               override fun onAdFailedToLoad(loadAdError: LoadAdError) {
                 isLoadingAd = false
-                Log.d(LOG_TAG, "onAdFailedToLoad: " + loadAdError.message)
-                Toast.makeText(context, "onAdFailedToLoad", Toast.LENGTH_SHORT).show()
+                
+                // 保存错误信息到应用单例
+                this@NiaApplication.lastLoadError = loadAdError
+                
+                // 打印详细错误日志
+                Log.e(LOG_TAG, "========== AppOpenAd Load Failed ==========")
+                Log.e(LOG_TAG, "AdUnitId: $AD_UNIT_ID")
+                Log.e(LOG_TAG, "Application ID: ca-app-pub-3554230884415364~6501138828")
+                Log.e(LOG_TAG, "Error Code: ${loadAdError.code}")
+                Log.e(LOG_TAG, "Error Domain: ${loadAdError.domain}")
+                Log.e(LOG_TAG, "Error Message: ${loadAdError.message}")
+                Log.e(LOG_TAG, "Error Cause: ${loadAdError.cause}")
+                
+                // 错误代码3的特殊处理说明
+                if (loadAdError.code == 3) {
+                    Log.e(LOG_TAG, "")
+                    Log.e(LOG_TAG, "⚠️ 错误代码3 - Publisher data not found")
+                    Log.e(LOG_TAG, "可能的原因：")
+                    Log.e(LOG_TAG, "1. 广告单元ID未在AdMob后台创建")
+                    Log.e(LOG_TAG, "2. 广告单元ID未激活")
+                    Log.e(LOG_TAG, "3. Application ID和Ad Unit ID不匹配（不属于同一账户）")
+                    Log.e(LOG_TAG, "4. 应用包名与AdMob后台注册的不一致")
+                    Log.e(LOG_TAG, "")
+                    Log.e(LOG_TAG, "解决方案：")
+                    Log.e(LOG_TAG, "1. 登录AdMob控制台：https://apps.admob.com")
+                    Log.e(LOG_TAG, "2. 确认广告单元ID存在：$AD_UNIT_ID")
+                    Log.e(LOG_TAG, "3. 确认广告单元已激活")
+                    Log.e(LOG_TAG, "4. 确认Application ID和Ad Unit ID属于同一账户")
+                    Log.e(LOG_TAG, "")
+                }
+                
+                // 打印 ResponseInfo（如果存在）
+                loadAdError.responseInfo?.let { responseInfo ->
+                    Log.e(LOG_TAG, "ResponseInfo:")
+                    Log.e(LOG_TAG, "  - ResponseId: ${responseInfo.responseId}")
+                    Log.e(LOG_TAG, "  - MediationAdapterClassName: ${responseInfo.mediationAdapterClassName}")
+                    
+                    // 打印适配器响应信息
+                    responseInfo.adapterResponses.forEachIndexed { index, adapterResponse ->
+                        Log.e(LOG_TAG, "  - AdapterResponse[$index]:")
+                        Log.e(LOG_TAG, "    * AdSourceName: ${adapterResponse.adSourceName}")
+                        Log.e(LOG_TAG, "    * LatencyMillis: ${adapterResponse.latencyMillis}ms")
+                        adapterResponse.adError?.let { error ->
+                            Log.e(LOG_TAG, "    * AdError: code=${error.code}, domain=${error.domain}, message=${error.message}")
+                        } ?: Log.e(LOG_TAG, "    * AdError: null")
+                    }
+                } ?: Log.w(LOG_TAG, "ResponseInfo is null")
+                
+                Log.e(LOG_TAG, "Formatted Error: ${formatLoadAdError(loadAdError)}")
+                Log.e(LOG_TAG, "===========================================")
+                
+                Toast.makeText(
+                    context,
+                    "onAdFailedToLoad: ${loadAdError.code}",
+                    Toast.LENGTH_SHORT
+                  )
+                  .show()
               }
             },
           )
+        }
+
+        private fun formatLoadAdError(loadAdError: LoadAdError): String {
+          val responseInfo = loadAdError.responseInfo
+          val mediationInfo =
+            responseInfo?.let {
+              val adapterResponsesSummary =
+                it.adapterResponses.joinToString(prefix = "[", postfix = "]") { response ->
+                  val errorMessage = response.adError?.message ?: "none"
+                  "{adSource=${response.adSourceName}, latency=${response.latencyMillis}ms, error=$errorMessage}"
+                }
+              "mediationAdapter=${it.mediationAdapterClassName}, adapterResponses=$adapterResponsesSummary"
+            }
+          return buildString {
+            append("code=${loadAdError.code}, domain=${loadAdError.domain}, message=${loadAdError.message}")
+            if (mediationInfo != null) {
+              append(", ").append(mediationInfo)
+            }
+          }
         }
     
         /** Check if ad was loaded more than n hours ago. */
@@ -316,16 +509,49 @@ class NiaApplication :
       }
     
       companion object {
-        // This is an ad unit ID for a test ad. Replace with your own app open ad unit ID.
-        private const val AD_UNIT_ID = "ca-app-pub-3940256099942544/9257395921"
+        /**
+         * 真实的生产环境广告单元 ID
+         * 
+         * 使用"测试设备 + 真实广告单元ID"的方式可以：
+         * 1. 获取接近生产的广告创意（真实广告内容）
+         * 2. 在测试设备上安全测试，不会产生无效点击
+         * 3. 验证广告展示效果和用户体验
+         * 
+         * 注意：
+         * - 测试设备ID需要在logcat中获取（见下方说明）
+         * - 只有添加到测试设备列表的设备才会显示真实广告
+         * - 其他设备会显示测试广告，避免产生无效点击
+         * 
+         * ⚠️ 重要：确保此ID在AdMob后台存在且已激活
+         * 当前使用的广告单元：testOpen1
+         * AdMob后台地址：https://apps.admob.com
+         * 
+         * 如果遇到错误代码3 "Publisher data not found"：
+         * 1. 登录AdMob后台确认广告单元ID存在
+         * 2. 确认广告单元已激活
+         * 3. 确认Application ID和Ad Unit ID属于同一账户
+         * 4. 注意：应用审批状态为"需要审核"时可能影响广告加载
+         */
+        private const val AD_UNIT_ID = "ca-app-pub-3554230884415364/5736111244" // testOpen1 - 开屏广告
         private const val LOG_TAG = "NiaApplication"
     
-        // Check your logcat output for the test device hashed ID e.g.
-        // "Use RequestConfiguration.Builder().setTestDeviceIds(Arrays.asList("ABCDEF012345"))
-        // to get test ads on this device" or
-        // "Use new ConsentDebugSettings.Builder().addTestDeviceHashedId("ABCDEF012345") to set this as
-        // a debug device".
-        const val TEST_DEVICE_HASHED_ID = "ABCDEF012345"
+        /**
+         * 测试设备哈希ID
+         * 
+         * 如何获取你的测试设备ID：
+         * 1. 运行应用，查看logcat输出
+         * 2. 查找类似这样的日志：
+         *    "Use RequestConfiguration.Builder().setTestDeviceIds(Arrays.asList("YOUR_DEVICE_ID"))
+         *     to get test ads on this device"
+         * 3. 将 YOUR_DEVICE_ID 替换下面的占位符
+         * 
+         * 或者从logcat中查找：
+         * "Use new ConsentDebugSettings.Builder().addTestDeviceHashedId("YOUR_DEVICE_ID")"
+         * 
+         * 当前配置的设备ID：39932DCCD8F03408461EA41EB5F1E43C
+         * ✅ 已配置真实测试设备ID
+         */
+        const val TEST_DEVICE_HASHED_ID = "39932DCCD8F03408461EA41EB5F1E43C"
       }
 
 }

@@ -43,6 +43,10 @@ class SplashActivity : ComponentActivity() {
 
     // Log the Mobile Ads SDK version.
     Log.d(LOG_TAG, "Google Mobile Ads SDK Version: " + MobileAds.getVersion())
+    Log.d(LOG_TAG, "Package Name: " + packageName)
+    Log.d(LOG_TAG, "Application ID: ca-app-pub-3554230884415364~6501138828 (Production)")
+    Log.d(LOG_TAG, "Test Device ID: ${NiaApplication.TEST_DEVICE_HASHED_ID}")
+    Log.d(LOG_TAG, "Mode: Production Ad Unit + Test Device (Real Ad Creatives)")
 
     // Create a timer so the SplashActivity will be displayed for a fixed amount of time.
     createTimer()
@@ -110,12 +114,14 @@ class SplashActivity : ComponentActivity() {
       return
     }
 
-    // Set your test devices.
+    // 配置测试设备：使用真实广告单元ID + 测试设备ID
+    // 这样可以获取接近生产的广告创意，同时避免产生无效点击
     MobileAds.setRequestConfiguration(
       RequestConfiguration.Builder()
         .setTestDeviceIds(listOf(NiaApplication.TEST_DEVICE_HASHED_ID))
         .build()
     )
+    Log.d(LOG_TAG, "RequestConfiguration: Test Device = ${NiaApplication.TEST_DEVICE_HASHED_ID}")
 
     CoroutineScope(Dispatchers.IO).launch {
       // Initialize the Google Mobile Ads SDK on a background thread.
@@ -138,7 +144,7 @@ class SplashActivity : ComponentActivity() {
   companion object {
     // Number of milliseconds to count down before showing the app open ad. This simulates the time
     // needed to load the app.
-    private const val COUNTER_TIME_MILLISECONDS = 5000L
+    private const val COUNTER_TIME_MILLISECONDS = 10000L
 
     private const val LOG_TAG = "SplashActivity"
   }
