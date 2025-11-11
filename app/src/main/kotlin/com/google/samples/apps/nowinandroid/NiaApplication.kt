@@ -22,7 +22,9 @@ import android.os.StrictMode
 import android.os.StrictMode.ThreadPolicy.Builder
 import coil.ImageLoader
 import coil.ImageLoaderFactory
+import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.MobileAds
+import com.google.android.gms.ads.RequestConfiguration
 import com.google.samples.apps.nowinandroid.sync.initializers.Sync
 import com.google.samples.apps.nowinandroid.util.ProfileVerifierLogger
 import dagger.hilt.android.HiltAndroidApp
@@ -44,12 +46,22 @@ class NiaApplication : Application(), ImageLoaderFactory {
 
         setStrictModePolicy()
 
-        // Initialize AdMob SDK early in the application lifecycle
+        // 配置 AdMob 测试设备
         // 根据官方文档：https://developers.google.com/admob/android/banner?hl=zh-cn
+        // 测试设备需要通过 RequestConfiguration 全局配置
+        val requestConfiguration = RequestConfiguration.Builder()
+            .setTestDeviceIds(
+                listOf(
+                    AdRequest.DEVICE_ID_EMULATOR, // 模拟器
+                    "39932DCCD8F03408461EA41EB5F1E43C", // 真实设备
+                ),
+            )
+            .build()
+        MobileAds.setRequestConfiguration(requestConfiguration)
+
+        // Initialize AdMob SDK early in the application lifecycle
         // 虽然 SDK 会在首次加载广告时自动初始化，但显式初始化可以优化广告加载性能
-        MobileAds.initialize(this) { initializationStatus ->
-            android.util.Log.d("NiaApplication", "AdMob SDK 初始化完成: ${initializationStatus.adapterStatusMap}")
-        }
+        MobileAds.initialize(this) { }
 
         // Initialize Sync; the system responsible for keeping data in the app up to date.
         Sync.initialize(context = this)

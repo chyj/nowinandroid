@@ -16,9 +16,13 @@
 
 package com.google.samples.apps.nowinandroid.core.designsystem.component
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -28,6 +32,7 @@ import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.NavigationRailItemDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.WindowAdaptiveInfo
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
@@ -215,22 +220,44 @@ fun NiaNavigationSuiteScaffold(
         ),
     )
 
-    NavigationSuiteScaffold(
-        navigationSuiteItems = {
-            NiaNavigationSuiteScope(
-                navigationSuiteScope = this,
-                navigationSuiteItemColors = navigationSuiteItemColors,
-            ).run(navigationSuiteItems)
-        },
-        layoutType = layoutType,
-        containerColor = Color.Transparent,
-        navigationSuiteColors = NavigationSuiteDefaults.colors(
-            navigationBarContentColor = NiaNavigationDefaults.navigationContentColor(),
-            navigationRailContainerColor = Color.Transparent,
-        ),
-        modifier = modifier,
-    ) {
-        content()
+    Box(modifier = modifier.fillMaxSize()) {
+        NavigationSuiteScaffold(
+            navigationSuiteItems = {
+                NiaNavigationSuiteScope(
+                    navigationSuiteScope = this,
+                    navigationSuiteItemColors = navigationSuiteItemColors,
+                ).run(navigationSuiteItems)
+            },
+            layoutType = layoutType,
+            containerColor = Color.Transparent,
+            navigationSuiteColors = NavigationSuiteDefaults.colors(
+                navigationBarContentColor = NiaNavigationDefaults.navigationContentColor(),
+                navigationRailContainerColor = Color.Transparent,
+            ),
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            // 为内容区域添加底部 padding，为导航栏底部的 40dp 占位留出空间
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = 40.dp)
+            ) {
+                content()
+            }
+        }
+        
+        // 在导航栏底部添加 40dp 的背景色占位，使导航栏背景色填充满整个空间
+        // 使用与导航栏相同的 Surface 组件和 tonalElevation，确保背景色完全一致
+        // Material 3 NavigationBar 默认使用 Surface 组件，tonalElevation 为 3.dp
+        Surface(
+            modifier = Modifier
+                .align(androidx.compose.ui.Alignment.BottomCenter)
+                .fillMaxWidth()
+                .height(40.dp),
+            tonalElevation = 3.dp, // 与 NavigationBar 的默认 tonalElevation 一致
+        ) {
+            // 空白内容，仅用于填充背景色
+        }
     }
 }
 
