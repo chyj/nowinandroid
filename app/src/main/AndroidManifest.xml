@@ -24,9 +24,10 @@
     If you use these permissions you must declare how you're using them to Google Play, otherwise the
     app will be rejected when publishing it. To avoid this we remove the permissions entirely.
     -->
-    <uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:node="remove"/>
-    <uses-permission android:name="android.permission.ACCESS_ADSERVICES_ATTRIBUTION" tools:node="remove"/>
-    <uses-permission android:name="android.permission.ACCESS_ADSERVICES_AD_ID" tools:node="remove"/>
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_ADSERVICES_ATTRIBUTION"
+        tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_ADSERVICES_AD_ID" tools:node="remove" />
 
     <application
         android:name=".NiaApplication"
@@ -67,6 +68,11 @@
         <property
             android:name="android.adservices.AD_SERVICES_CONFIG"
             tools:node="remove" />
+
+        <!-- AdMob Application ID - Using test App ID for development -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-3940256099942544~3347511713" />
 
     </application>
 

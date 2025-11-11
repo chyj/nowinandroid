@@ -55,6 +55,12 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
+    companion object {
+        // 测试设备的哈希 ID，用于 AdMob 测试广告
+        // 可以通过 AdRequest.Builder().build() 在 logcat 中查看设备的测试 ID
+        const val TEST_DEVICE_HASHED_ID = "TEST_DEVICE_ID"
+    }
+
     /**
      * Lazily inject [JankStats], which is used to track jank throughout the app.
      */

@@ -18,6 +18,7 @@ package com.google.samples.apps.nowinandroid.core.designsystem.component
 
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -99,7 +100,7 @@ fun NiaNavigationBar(
     content: @Composable RowScope.() -> Unit,
 ) {
     NavigationBar(
-        modifier = modifier,
+        modifier = modifier.height(120.dp), // 默认 80dp + 40dp = 120dp
         contentColor = NiaNavigationDefaults.navigationContentColor(),
         tonalElevation = 0.dp,
         content = content,
