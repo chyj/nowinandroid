@@ -221,6 +221,8 @@ fun NiaNavigationSuiteScaffold(
     )
 
     Box(modifier = modifier.fillMaxSize()) {
+        // 让整个 NavigationSuiteScaffold 向上移动 55dp，这样导航栏的内容会向上推
+        // 导航栏会从屏幕底部向上移动 55dp，为底部的占位留出空间
         NavigationSuiteScaffold(
             navigationSuiteItems = {
                 NiaNavigationSuiteScope(
@@ -234,26 +236,21 @@ fun NiaNavigationSuiteScaffold(
                 navigationBarContentColor = NiaNavigationDefaults.navigationContentColor(),
                 navigationRailContainerColor = Color.Transparent,
             ),
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = 55.dp), // 整个 scaffold 向上移动 55dp，导航栏内容向上推
         ) {
-            // 为内容区域添加底部 padding，为导航栏底部的 40dp 占位留出空间
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(bottom = 40.dp)
-            ) {
-                content()
-            }
+            content()
         }
         
-        // 在导航栏底部添加 40dp 的背景色占位，使导航栏背景色填充满整个空间
+        // 在屏幕最底部添加 55dp 的背景色占位，使导航栏背景色填充满整个空间
         // 使用与导航栏相同的 Surface 组件和 tonalElevation，确保背景色完全一致
         // Material 3 NavigationBar 默认使用 Surface 组件，tonalElevation 为 3.dp
         Surface(
             modifier = Modifier
                 .align(androidx.compose.ui.Alignment.BottomCenter)
                 .fillMaxWidth()
-                .height(40.dp),
+                .height(55.dp),
             tonalElevation = 3.dp, // 与 NavigationBar 的默认 tonalElevation 一致
         ) {
             // 空白内容，仅用于填充背景色
