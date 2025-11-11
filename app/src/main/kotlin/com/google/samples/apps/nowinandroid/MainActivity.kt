@@ -56,9 +56,17 @@ import javax.inject.Inject
 class MainActivity : ComponentActivity() {
 
     companion object {
-        // 测试设备的哈希 ID，用于 AdMob 测试广告
-        // 可以通过 AdRequest.Builder().build() 在 logcat 中查看设备的测试 ID
-        const val TEST_DEVICE_HASHED_ID = "TEST_DEVICE_ID"
+        // 测试设备的哈希 ID，用于 UMP (User Messaging Platform) 测试
+        // 注意：这个 ID 仅用于 UMP 同意管理平台的测试，不是用于 AdMob 广告请求的测试设备 ID
+        // 
+        // 对于 AdMob 广告测试：
+        // 1. 如果使用官方测试广告单元 ID (ca-app-pub-3940256099942544/9214589741)，
+        //    会自动返回测试广告，无需配置测试设备
+        // 2. 如果需要为特定设备配置测试广告，可以通过以下方式获取设备 ID：
+        //    - 运行应用并查看 logcat，查找 "Use RequestConfiguration.Builder().setTestDeviceIds(...)"
+        //    - 或者使用 AdRequest.DEVICE_ID_EMULATOR 来添加模拟器
+        //    - 然后在 BannerAd.kt 中的 AdRequest.Builder() 中添加 .addTestDevice("YOUR_DEVICE_ID")
+        const val TEST_DEVICE_HASHED_ID = "TEST_DEVICE_ID" // 占位符，实际使用时需要替换为真实的设备哈希 ID
     }
 
     /**

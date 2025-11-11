@@ -43,7 +43,13 @@
         <activity
             android:name=".MainActivity"
             android:configChanges="uiMode"
-            android:exported="true">
+            android:exported="true"
+            android:hardwareAccelerated="true">
+            <!--
+            根据 AdMob 官方文档：https://developers.google.com/admob/android/banner?hl=zh-cn
+            为了确保视频广告在横幅广告视图中成功展示，必须启用硬件加速。
+            硬件加速默认处于启用状态，但为了确保兼容性，这里显式启用。
+            -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

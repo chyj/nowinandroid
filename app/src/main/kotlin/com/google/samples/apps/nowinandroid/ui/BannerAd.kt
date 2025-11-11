@@ -162,10 +162,21 @@ fun BannerAd(
                 delay(100)
                 Log.d(TAG, "========== 构建 AdRequest ==========")
                 // 构建测试广告请求
-                // 注意：使用测试广告单元 ID 时，AdMob 会自动返回测试广告
-                val adRequest = AdRequest.Builder()
-                    .build()
+                // 根据官方文档：https://developers.google.com/admob/android/banner?hl=zh-cn
+                // 使用测试广告单元 ID (ca-app-pub-3940256099942544/9214589741) 时，
+                // AdMob 会自动返回测试广告，无需额外配置测试设备
+                // 但如果要确保在特定设备上看到测试广告，可以添加测试设备 ID
+                val adRequestBuilder = AdRequest.Builder()
+                
+                // 可选：添加测试设备（如果需要）
+                // 可以通过运行应用并查看 logcat 中的 "Use RequestConfiguration.Builder().setTestDeviceIds(Arrays.asList("YOUR_DEVICE_ID"))" 来获取设备 ID
+                // 或者使用 AdRequest.DEVICE_ID_EMULATOR 来添加模拟器
+                // adRequestBuilder.addTestDevice(AdRequest.DEVICE_ID_EMULATOR) // 模拟器
+                // adRequestBuilder.addTestDevice("YOUR_DEVICE_HASHED_ID") // 真实设备
+                
+                val adRequest = adRequestBuilder.build()
                 Log.d(TAG, "AdRequest 构建完成")
+                Log.d(TAG, "使用测试广告单元 ID: $finalAdUnitId")
                 Log.d(TAG, "开始加载广告...")
                 Log.d(TAG, "调用 loadAd()...")
                 adView.loadAd(adRequest)
