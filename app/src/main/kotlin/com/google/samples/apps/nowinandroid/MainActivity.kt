@@ -41,6 +41,8 @@ import com.google.samples.apps.nowinandroid.core.data.util.NetworkMonitor
 import com.google.samples.apps.nowinandroid.core.data.util.TimeZoneMonitor
 import com.google.samples.apps.nowinandroid.core.designsystem.theme.NiaTheme
 import com.google.samples.apps.nowinandroid.core.ui.LocalTimeZone
+import com.google.samples.apps.nowinandroid.ads.GoogleMobileAdsConsentManager
+import com.google.samples.apps.nowinandroid.ads.NativeAdManager
 import com.google.samples.apps.nowinandroid.ui.NiaApp
 import com.google.samples.apps.nowinandroid.ui.rememberNiaAppState
 import com.google.samples.apps.nowinandroid.util.isSystemInDarkTheme
@@ -72,6 +74,9 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var userNewsResourceRepository: UserNewsResourceRepository
+
+    @Inject
+    lateinit var nativeAdManager: NativeAdManager
 
     private val viewModel: MainActivityViewModel by viewModels()
 
@@ -131,6 +136,14 @@ class MainActivity : ComponentActivity() {
         // evaluated each time the app needs to be redrawn so it should be fast to avoid blocking
         // the UI.
         splashScreen.setKeepOnScreenCondition { viewModel.uiState.value.shouldKeepSplashScreen() }
+
+        // 初始化 AdMob SDK 和用户同意管理器
+        lifecycleScope.launch {
+            // 初始化用户同意管理器
+            GoogleMobileAdsConsentManager.initialize(this@MainActivity)
+            // 初始化 AdMob SDK
+            nativeAdManager.initialize(this@MainActivity)
+        }
 
         setContent {
             val appState = rememberNiaAppState(

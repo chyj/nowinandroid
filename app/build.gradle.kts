@@ -100,7 +100,10 @@ dependencies {
     implementation(libs.androidx.window.core)
     implementation(libs.kotlinx.coroutines.guava)
     implementation(libs.coil.kt)
+    implementation(libs.coil.kt.compose)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.play.services.ads)
+    implementation(libs.user.messaging.platform)
 
     ksp(libs.hilt.compiler)
 
@@ -143,4 +146,121 @@ baselineProfile {
 
 dependencyGuard {
     configuration("prodReleaseRuntimeClasspath")
+}
+
+// 为向后兼容性创建任务别名
+// 当有多个 flavor 维度时，Gradle 无法自动解析模糊的任务名称
+// 因此我们需要显式创建别名，让旧的构建命令仍然可以工作
+afterEvaluate {
+    // 构建任务别名
+    tasks.register("assembleDemoDebug") {
+        dependsOn("assembleDemoDefaultDebug")
+        group = "build"
+        description = "Assembles the DemoDefaultDebug variant (backward compatibility alias)"
+    }
+    
+    tasks.register("assembleProdDebug") {
+        dependsOn("assembleProdDefaultDebug")
+        group = "build"
+        description = "Assembles the ProdDefaultDebug variant (backward compatibility alias)"
+    }
+    
+    tasks.register("assembleDemoRelease") {
+        dependsOn("assembleDemoDefaultRelease")
+        group = "build"
+        description = "Assembles the DemoDefaultRelease variant (backward compatibility alias)"
+    }
+    
+    tasks.register("assembleProdRelease") {
+        dependsOn("assembleProdDefaultRelease")
+        group = "build"
+        description = "Assembles the ProdDefaultRelease variant (backward compatibility alias)"
+    }
+    
+    // 单元测试任务别名
+    tasks.register("assembleDemoDebugUnitTest") {
+        dependsOn("assembleDemoDefaultDebugUnitTest")
+        group = "verification"
+        description = "Assembles unit tests for DemoDefaultDebug variant (backward compatibility alias)"
+    }
+    
+    tasks.register("assembleProdDebugUnitTest") {
+        dependsOn("assembleProdDefaultDebugUnitTest")
+        group = "verification"
+        description = "Assembles unit tests for ProdDefaultDebug variant (backward compatibility alias)"
+    }
+    
+    tasks.register("assembleDemoReleaseUnitTest") {
+        dependsOn("assembleDemoDefaultReleaseUnitTest")
+        group = "verification"
+        description = "Assembles unit tests for DemoDefaultRelease variant (backward compatibility alias)"
+    }
+    
+    tasks.register("assembleProdReleaseUnitTest") {
+        dependsOn("assembleProdDefaultReleaseUnitTest")
+        group = "verification"
+        description = "Assembles unit tests for ProdDefaultRelease variant (backward compatibility alias)"
+    }
+    
+    // Android 测试任务别名
+    tasks.register("assembleDemoDebugAndroidTest") {
+        dependsOn("assembleDemoDefaultDebugAndroidTest")
+        group = "verification"
+        description = "Assembles Android tests for DemoDefaultDebug variant (backward compatibility alias)"
+    }
+    
+    tasks.register("assembleProdDebugAndroidTest") {
+        dependsOn("assembleProdDefaultDebugAndroidTest")
+        group = "verification"
+        description = "Assembles Android tests for ProdDefaultDebug variant (backward compatibility alias)"
+    }
+    
+    tasks.register("assembleDemoReleaseAndroidTest") {
+        dependsOn("assembleDemoDefaultReleaseAndroidTest")
+        group = "verification"
+        description = "Assembles Android tests for DemoDefaultRelease variant (backward compatibility alias)"
+    }
+    
+    tasks.register("assembleProdReleaseAndroidTest") {
+        dependsOn("assembleProdDefaultReleaseAndroidTest")
+        group = "verification"
+        description = "Assembles Android tests for ProdDefaultRelease variant (backward compatibility alias)"
+    }
+    
+    // 测试执行任务别名
+    tasks.register("testDemoDebugUnitTest") {
+        dependsOn("testDemoDefaultDebugUnitTest")
+        group = "verification"
+        description = "Runs unit tests for DemoDefaultDebug variant (backward compatibility alias)"
+    }
+    
+    tasks.register("testProdDebugUnitTest") {
+        dependsOn("testProdDefaultDebugUnitTest")
+        group = "verification"
+        description = "Runs unit tests for ProdDefaultDebug variant (backward compatibility alias)"
+    }
+    
+    tasks.register("testDemoReleaseUnitTest") {
+        dependsOn("testDemoDefaultReleaseUnitTest")
+        group = "verification"
+        description = "Runs unit tests for DemoDefaultRelease variant (backward compatibility alias)"
+    }
+    
+    tasks.register("testProdReleaseUnitTest") {
+        dependsOn("testProdDefaultReleaseUnitTest")
+        group = "verification"
+        description = "Runs unit tests for ProdDefaultRelease variant (backward compatibility alias)"
+    }
+    
+    tasks.register("connectedDemoDebugAndroidTest") {
+        dependsOn("connectedDemoDefaultDebugAndroidTest")
+        group = "verification"
+        description = "Runs Android tests for DemoDefaultDebug variant on connected devices (backward compatibility alias)"
+    }
+    
+    tasks.register("connectedProdDebugAndroidTest") {
+        dependsOn("connectedProdDefaultDebugAndroidTest")
+        group = "verification"
+        description = "Runs Android tests for ProdDefaultDebug variant on connected devices (backward compatibility alias)"
+    }
 }

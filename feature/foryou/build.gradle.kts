@@ -31,6 +31,8 @@ dependencies {
     implementation(projects.core.data)
     implementation(projects.core.domain)
     implementation(projects.core.notifications)
+    implementation(libs.play.services.ads)
+    implementation(libs.coil.kt.compose)
 
     testImplementation(libs.hilt.android.testing)
     testImplementation(libs.robolectric)

@@ -63,8 +63,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
@@ -103,6 +107,14 @@ import com.google.samples.apps.nowinandroid.core.ui.TrackScrollJank
 import com.google.samples.apps.nowinandroid.core.ui.UserNewsResourcePreviewParameterProvider
 import com.google.samples.apps.nowinandroid.core.ui.launchCustomChromeTab
 import com.google.samples.apps.nowinandroid.core.ui.newsFeed
+import com.google.samples.apps.nowinandroid.core.ui.logNewsResourceOpened
+import com.google.android.gms.ads.AdLoader
+import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.LoadAdError
+import com.google.android.gms.ads.nativead.NativeAd
+import com.google.android.gms.ads.nativead.NativeAdOptions
+import com.google.android.gms.ads.VideoOptions
+import android.util.Log
 
 @Composable
 internal fun ForYouScreen(
@@ -114,6 +126,47 @@ internal fun ForYouScreen(
     val feedState by viewModel.feedState.collectAsStateWithLifecycle()
     val isSyncing by viewModel.isSyncing.collectAsStateWithLifecycle()
     val deepLinkedUserNewsResource by viewModel.deepLinkedNewsResource.collectAsStateWithLifecycle()
+    
+    // 广告状态
+    val context = LocalContext.current
+    var nativeAd by remember { mutableStateOf<NativeAd?>(null) }
+    
+    // 加载广告
+    LaunchedEffect(Unit) {
+        if (nativeAd == null) {
+            Log.d("ForYouScreen", "📥 [广告] 开始加载原生广告")
+            val adLoader = AdLoader.Builder(context, "ca-app-pub-3940256099942544/2247696110")
+                .forNativeAd { ad ->
+                    Log.d("ForYouScreen", "✅ [广告] 原生广告加载成功")
+                    nativeAd = ad
+                }
+                .withAdListener(object : com.google.android.gms.ads.AdListener() {
+                    override fun onAdFailedToLoad(error: LoadAdError) {
+                        Log.e("ForYouScreen", "❌ [广告] 原生广告加载失败: ${error.message}")
+                    }
+                })
+                .withNativeAdOptions(
+                    NativeAdOptions.Builder()
+                        .setVideoOptions(
+                            VideoOptions.Builder()
+                                .setStartMuted(true)
+                                .build()
+                        )
+                        .build()
+                )
+                .build()
+            adLoader.loadAd(AdRequest.Builder().build())
+        }
+    }
+    
+    // 清理广告资源
+    DisposableEffect(Unit) {
+        onDispose {
+            nativeAd?.destroy()
+            nativeAd = null
+            Log.d("ForYouScreen", "🗑️ [广告] 广告资源已清理")
+        }
+    }
 
     ForYouScreen(
         isSyncing = isSyncing,
@@ -126,6 +179,7 @@ internal fun ForYouScreen(
         saveFollowedTopics = viewModel::dismissOnboarding,
         onNewsResourcesCheckedChanged = viewModel::updateNewsResourceSaved,
         onNewsResourceViewed = { viewModel.setNewsResourceViewed(it, true) },
+        nativeAd = nativeAd,
         modifier = modifier,
     )
 }
@@ -142,6 +196,7 @@ internal fun ForYouScreen(
     saveFollowedTopics: () -> Unit,
     onNewsResourcesCheckedChanged: (String, Boolean) -> Unit,
     onNewsResourceViewed: (String) -> Unit,
+    nativeAd: NativeAd?,
     modifier: Modifier = Modifier,
 ) {
     val isOnboardingLoading = onboardingUiState is OnboardingUiState.Loading
@@ -189,12 +244,60 @@ internal fun ForYouScreen(
                 },
             )
 
-            newsFeed(
-                feedState = feedState,
-                onNewsResourcesCheckedChanged = onNewsResourcesCheckedChanged,
-                onNewsResourceViewed = onNewsResourceViewed,
-                onTopicClick = onTopicClick,
-            )
+            // 手动渲染新闻列表，以便在第二个位置插入广告
+            when (feedState) {
+                NewsFeedUiState.Loading -> Unit
+                is NewsFeedUiState.Success -> {
+                    feedState.feed.forEachIndexed { index, userNewsResource ->
+                        // 渲染新闻项
+                        item(
+                            key = userNewsResource.id,
+                            contentType = "newsFeedItem",
+                        ) {
+                            val context = LocalContext.current
+                            val analyticsHelper = com.google.samples.apps.nowinandroid.core.analytics.LocalAnalyticsHelper.current
+                            val backgroundColor = MaterialTheme.colorScheme.background.toArgb()
+
+                            com.google.samples.apps.nowinandroid.core.ui.NewsResourceCardExpanded(
+                                userNewsResource = userNewsResource,
+                                isBookmarked = userNewsResource.isSaved,
+                                onClick = {
+                                    analyticsHelper.logNewsResourceOpened(
+                                        newsResourceId = userNewsResource.id,
+                                    )
+                                    com.google.samples.apps.nowinandroid.core.ui.launchCustomChromeTab(
+                                        context,
+                                        android.net.Uri.parse(userNewsResource.url),
+                                        backgroundColor,
+                                    )
+                                    onNewsResourceViewed(userNewsResource.id)
+                                },
+                                hasBeenViewed = userNewsResource.hasBeenViewed,
+                                onToggleBookmark = {
+                                    onNewsResourcesCheckedChanged(
+                                        userNewsResource.id,
+                                        !userNewsResource.isSaved,
+                                    )
+                                },
+                                onTopicClick = onTopicClick,
+                                modifier = Modifier.padding(horizontal = 8.dp),
+                            )
+                        }
+                        
+                        // 在第二个新闻项后插入广告
+                        if (index == 1 && nativeAd != null) {
+                            item(
+                                key = "native_ad_${userNewsResource.id}",
+                                contentType = "nativeAd",
+                                span = StaggeredGridItemSpan.FullLine,
+                            ) {
+                                Log.d("ForYouScreen", "📱 [广告] 在位置 ${index + 1} 显示广告")
+                                NativeAdCard(nativeAd = nativeAd)
+                            }
+                        }
+                    }
+                }
+            }
 
             item(span = StaggeredGridItemSpan.FullLine, contentType = "bottomSpacing") {
                 Column {
@@ -520,6 +623,7 @@ fun ForYouScreenPopulatedFeed(
             onNewsResourceViewed = {},
             onTopicClick = {},
             onDeepLinkOpened = {},
+            nativeAd = null,
         )
     }
 }
@@ -544,6 +648,7 @@ fun ForYouScreenOfflinePopulatedFeed(
             onNewsResourceViewed = {},
             onTopicClick = {},
             onDeepLinkOpened = {},
+            nativeAd = null,
         )
     }
 }
@@ -571,6 +676,7 @@ fun ForYouScreenTopicSelection(
             onNewsResourceViewed = {},
             onTopicClick = {},
             onDeepLinkOpened = {},
+            nativeAd = null,
         )
     }
 }
@@ -590,6 +696,7 @@ fun ForYouScreenLoading() {
             onNewsResourceViewed = {},
             onTopicClick = {},
             onDeepLinkOpened = {},
+            nativeAd = null,
         )
     }
 }
@@ -614,6 +721,7 @@ fun ForYouScreenPopulatedAndLoading(
             onNewsResourceViewed = {},
             onTopicClick = {},
             onDeepLinkOpened = {},
+            nativeAd = null,
         )
     }
 }
