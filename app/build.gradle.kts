@@ -102,6 +102,10 @@ dependencies {
     implementation(libs.coil.kt)
     implementation(libs.kotlinx.serialization.json)
 
+    // AdMob dependencies
+    implementation(libs.play.services.ads)
+    implementation(libs.ump)
+
     ksp(libs.hilt.compiler)
 
     debugImplementation(libs.androidx.compose.ui.testManifest)

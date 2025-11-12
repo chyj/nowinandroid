@@ -20,8 +20,11 @@ import android.app.Application
 import android.content.pm.ApplicationInfo
 import android.os.StrictMode
 import android.os.StrictMode.ThreadPolicy.Builder
+import android.util.Log
 import coil.ImageLoader
 import coil.ImageLoaderFactory
+import com.google.android.gms.ads.MobileAds
+import com.google.android.gms.ads.initialization.InitializationStatus
 import com.google.samples.apps.nowinandroid.sync.initializers.Sync
 import com.google.samples.apps.nowinandroid.util.ProfileVerifierLogger
 import dagger.hilt.android.HiltAndroidApp
@@ -46,6 +49,49 @@ class NiaApplication : Application(), ImageLoaderFactory {
         // Initialize Sync; the system responsible for keeping data in the app up to date.
         Sync.initialize(context = this)
         profileVerifierLogger()
+
+        // Initialize Mobile Ads SDK (only once per app session)
+        initializeMobileAds()
+        
+        // Verify AdMob configuration
+        verifyAdMobConfiguration()
+    }
+    
+    /**
+     * 验证 AdMob 配置
+     */
+    private fun verifyAdMobConfiguration() {
+        com.google.samples.apps.nowinandroid.ads.ConfigVerification.verifyConfiguration(this)
+    }
+
+    /**
+     * 初始化 Google Mobile Ads SDK
+     * 
+     * 根据 Google 官方指南，每次应用会话只应初始化一次。
+     * SDK 版本会在初始化完成后记录到日志中。
+     * 
+     * 注意：初始化是异步的，但根据官方示例，应该在 Application 中尽早初始化。
+     */
+    private fun initializeMobileAds() {
+        Log.d(TAG, "[LIFECYCLE] Starting MobileAds initialization...")
+        MobileAds.initialize(this) { initializationStatus: InitializationStatus ->
+            // 记录 SDK 版本和适配器状态
+            val adapterStatusMap = initializationStatus.adapterStatusMap
+            Log.d(TAG, "[LIFECYCLE] ✅ Mobile Ads SDK initialized successfully")
+            Log.d(TAG, "[LIFECYCLE] SDK Version: ${MobileAds.getVersion()}")
+            
+            adapterStatusMap.forEach { (adapter, status) ->
+                Log.d(TAG, "[LIFECYCLE] Adapter: $adapter, Status: ${status.initializationState}, " +
+                    "Description: ${status.description}")
+            }
+
+            // TODO: 如果需要配置测试设备 ID，可以在这里添加
+            // MobileAds.setRequestConfiguration(
+            //     RequestConfiguration.Builder()
+            //         .setTestDeviceIds(listOf("YOUR_TEST_DEVICE_ID"))
+            //         .build()
+            // )
+        }
     }
 
     override fun newImageLoader(): ImageLoader = imageLoader.get()
@@ -69,5 +115,9 @@ class NiaApplication : Application(), ImageLoaderFactory {
                 Builder().detectAll().penaltyLog().build(),
             )
         }
+    }
+
+    companion object {
+        private const val TAG = "NiaApplication"
     }
 }

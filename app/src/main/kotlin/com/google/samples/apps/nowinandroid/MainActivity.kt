@@ -16,6 +16,7 @@
 
 package com.google.samples.apps.nowinandroid
 
+import android.content.pm.ApplicationInfo
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -34,6 +35,8 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.metrics.performance.JankStats
 import androidx.tracing.trace
 import com.google.samples.apps.nowinandroid.MainActivityUiState.Loading
+import com.google.samples.apps.nowinandroid.ads.GoogleMobileAdsConsentManager
+import com.google.samples.apps.nowinandroid.ads.InterstitialAdManager
 import com.google.samples.apps.nowinandroid.core.analytics.AnalyticsHelper
 import com.google.samples.apps.nowinandroid.core.analytics.LocalAnalyticsHelper
 import com.google.samples.apps.nowinandroid.core.data.repository.UserNewsResourceRepository
@@ -72,6 +75,12 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var userNewsResourceRepository: UserNewsResourceRepository
+
+    @Inject
+    lateinit var consentManager: GoogleMobileAdsConsentManager
+
+    @Inject
+    lateinit var interstitialAdManager: InterstitialAdManager
 
     private val viewModel: MainActivityViewModel by viewModels()
 
@@ -132,11 +141,24 @@ class MainActivity : ComponentActivity() {
         // the UI.
         splashScreen.setKeepOnScreenCondition { viewModel.uiState.value.shouldKeepSplashScreen() }
 
+        // Initialize consent flow and load ads
+        // 注意：根据官方示例，应该在 Activity 的 onCreate 中开始同意流程
+        // MobileAds SDK 已经在 Application.onCreate() 中初始化（异步），
+        // 但 UMP 同意流程可以独立进行，不需要等待 MobileAds 初始化完成
+        initializeAds()
+
         setContent {
             val appState = rememberNiaAppState(
                 networkMonitor = networkMonitor,
                 userNewsResourceRepository = userNewsResourceRepository,
                 timeZoneMonitor = timeZoneMonitor,
+                onNavigateToTopLevelDestination = { destination ->
+                    // 在导航切换时尝试显示插页式广告
+                    // 如果广告未准备好，会正常继续导航流程
+                    android.util.Log.d("MainActivity", "Navigation to ${destination.name}, attempting to show ad")
+                    val adShown = interstitialAdManager.showAd(this)
+                    android.util.Log.d("MainActivity", "Ad shown: $adShown")
+                },
             )
 
             val currentTimeZone by appState.currentTimeZone.collectAsStateWithLifecycle()
@@ -164,6 +186,40 @@ class MainActivity : ComponentActivity() {
     override fun onPause() {
         super.onPause()
         lazyStats.get().isTrackingEnabled = false
+    }
+
+    /**
+     * 初始化广告同意流程并预加载广告
+     * 
+     * 根据 Google 官方指南，在加载广告之前必须先完成 UMP 同意流程。
+     * 只有在用户同意后，才会加载插页式广告。
+     */
+    private fun initializeAds() {
+        // 检查是否为调试模式（用于测试）
+        val isDebug = applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
+        
+        // TODO: 如果需要测试设备，请替换为您的测试设备 ID
+        // 获取测试设备 ID 的方法：运行应用后查看 logcat，搜索 "Use RequestConfiguration.Builder().setTestDeviceIds"
+        val testDeviceId: String? = if (isDebug) {
+            // 在调试模式下，可以设置测试设备 ID
+            // 示例: "33BE2250B28B63B8F82BEC..."
+            null // 设置为 null 以使用默认测试设备
+        } else {
+            null
+        }
+
+        // 收集用户同意
+        consentManager.collectConsent(
+            activity = this,
+            isDebug = isDebug,
+            testDeviceId = testDeviceId,
+            onConsentFormDismissedListener = {
+                // 同意流程完成后，如果用户同意，则加载广告
+                if (consentManager.canRequestAds) {
+                    interstitialAdManager.loadAd(this)
+                }
+            },
+        )
     }
 }
 

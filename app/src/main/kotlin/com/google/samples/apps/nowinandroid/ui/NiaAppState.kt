@@ -57,6 +57,7 @@ fun rememberNiaAppState(
     timeZoneMonitor: TimeZoneMonitor,
     coroutineScope: CoroutineScope = rememberCoroutineScope(),
     navController: NavHostController = rememberNavController(),
+    onNavigateToTopLevelDestination: ((TopLevelDestination) -> Unit)? = null,
 ): NiaAppState {
     NavigationTrackingSideEffect(navController)
     return remember(
@@ -65,6 +66,7 @@ fun rememberNiaAppState(
         networkMonitor,
         userNewsResourceRepository,
         timeZoneMonitor,
+        onNavigateToTopLevelDestination,
     ) {
         NiaAppState(
             navController = navController,
@@ -72,6 +74,7 @@ fun rememberNiaAppState(
             networkMonitor = networkMonitor,
             userNewsResourceRepository = userNewsResourceRepository,
             timeZoneMonitor = timeZoneMonitor,
+            onNavigateToTopLevelDestination = onNavigateToTopLevelDestination,
         )
     }
 }
@@ -83,6 +86,11 @@ class NiaAppState(
     networkMonitor: NetworkMonitor,
     userNewsResourceRepository: UserNewsResourceRepository,
     timeZoneMonitor: TimeZoneMonitor,
+    /**
+     * 可选的回调，在导航到顶级目的地时触发。
+     * 可以用于显示插页式广告等操作。
+     */
+    private val onNavigateToTopLevelDestination: ((TopLevelDestination) -> Unit)? = null,
 ) {
     private val previousDestination = mutableStateOf<NavDestination?>(null)
 
@@ -154,6 +162,9 @@ class NiaAppState(
      */
     fun navigateToTopLevelDestination(topLevelDestination: TopLevelDestination) {
         trace("Navigation: ${topLevelDestination.name}") {
+            // 触发导航回调（可用于显示插页式广告等）
+            onNavigateToTopLevelDestination?.invoke(topLevelDestination)
+
             val topLevelNavOptions = navOptions {
                 // Pop up to the start destination of the graph to
                 // avoid building up a large stack of destinations
