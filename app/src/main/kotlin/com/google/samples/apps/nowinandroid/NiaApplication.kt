@@ -531,8 +531,9 @@ class NiaApplication :
          * 2. 确认广告单元已激活
          * 3. 确认Application ID和Ad Unit ID属于同一账户
          * 4. 注意：应用审批状态为"需要审核"时可能影响广告加载
+         * ca-app-pub-3940256099942544/9257395921
          */
-        private const val AD_UNIT_ID = "ca-app-pub-3554230884415364/5736111244" // testOpen1 - 开屏广告
+        private const val AD_UNIT_ID = "ca-app-pub-3940256099942544/9257395921" // testOpen1 - 开屏广告
         private const val LOG_TAG = "NiaApplication"
     
         /**
