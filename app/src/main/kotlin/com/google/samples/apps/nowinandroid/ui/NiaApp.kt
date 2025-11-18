@@ -56,7 +56,6 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
@@ -68,7 +67,6 @@ import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
 import com.google.samples.apps.nowinandroid.R
-import com.google.samples.apps.nowinandroid.GoogleMobileAdsConsentManager
 import com.google.samples.apps.nowinandroid.core.designsystem.component.NiaBackground
 import com.google.samples.apps.nowinandroid.core.designsystem.component.NiaGradientBackground
 import com.google.samples.apps.nowinandroid.core.designsystem.component.NiaNavigationSuiteScaffold
@@ -147,16 +145,13 @@ internal fun NiaApp(
         .collectAsStateWithLifecycle()
     val currentDestination = appState.currentDestination
     
-    // 获取用户同意状态，用于决定是否显示广告
-    val context = LocalContext.current
-    val consentManager = remember { GoogleMobileAdsConsentManager.getInstance(context) }
-    val canRequestAds = consentManager.canRequestAds
+    // 直接允许显示广告，不需要用户同意步骤
+    val canRequestAds = true
     
     // 记录广告相关状态
-    LaunchedEffect(canRequestAds) {
-        Log.d(TAG, "========== 广告同意状态检查 ==========")
-        Log.d(TAG, "canRequestAds: $canRequestAds")
-        Log.d(TAG, "isPrivacyOptionsRequired: ${consentManager.isPrivacyOptionsRequired}")
+    LaunchedEffect(Unit) {
+        Log.d(TAG, "========== 广告状态检查 ==========")
+        Log.d(TAG, "canRequestAds: $canRequestAds (直接允许，无需同意)")
     }
 
     if (showSettingsDialog) {
