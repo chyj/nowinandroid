@@ -193,8 +193,13 @@ class MainActivity : ComponentActivity() {
      * 
      * 根据 Google 官方指南，在加载广告之前必须先完成 UMP 同意流程。
      * 只有在用户同意后，才会加载插页式广告。
+     * 
+     * 注意：当前已跳过用户同意流程，直接加载广告。
      */
     private fun initializeAds() {
+        // 跳过用户同意流程，直接加载广告
+        // 如果需要恢复同意流程，请取消下面的注释并注释掉直接加载的代码
+        /*
         // 检查是否为调试模式（用于测试）
         val isDebug = applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
         
@@ -220,6 +225,11 @@ class MainActivity : ComponentActivity() {
                 }
             },
         )
+        */
+        
+        // 跳过同意流程，直接加载广告
+        android.util.Log.d("MainActivity", "Skipping consent flow, loading ad directly")
+        interstitialAdManager.loadAd(this)
     }
 }
 

@@ -42,12 +42,23 @@ class GoogleMobileAdsConsentManager @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
     private val consentInformation: ConsentInformation = UserMessagingPlatform.getConsentInformation(context)
+    
+    /**
+     * 是否跳过用户同意流程（用于测试或开发环境）
+     * 设置为 true 时，将跳过所有同意检查，直接允许加载广告
+     */
+    private val skipConsentFlow: Boolean = true
 
     /**
      * 是否已经获得用户同意（可以加载广告）
      */
     val canRequestAds: Boolean
         get() {
+            // 如果跳过同意流程，直接返回 true
+            if (skipConsentFlow) {
+                Log.d(TAG, "[LIFECYCLE] canRequestAds check: true (consent flow skipped)")
+                return true
+            }
             val canRequest = consentInformation.canRequestAds()
             Log.d(TAG, "[LIFECYCLE] canRequestAds check: $canRequest")
             return canRequest
