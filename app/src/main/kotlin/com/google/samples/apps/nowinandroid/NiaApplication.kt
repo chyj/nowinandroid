@@ -32,9 +32,6 @@ import android.content.Context
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
-import androidx.lifecycle.DefaultLifecycleObserver
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.multidex.MultiDexApplication
 import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.AdRequest
@@ -52,8 +49,7 @@ import java.util.Date
 class NiaApplication :
     MultiDexApplication(),
     ImageLoaderFactory,
-    Application.ActivityLifecycleCallbacks,
-    DefaultLifecycleObserver {
+    Application.ActivityLifecycleCallbacks {
     @Inject
     lateinit var imageLoader: dagger.Lazy<ImageLoader>
 
@@ -88,7 +84,6 @@ class NiaApplication :
     override fun onCreate() {
         super<MultiDexApplication>.onCreate()
         registerActivityLifecycleCallbacks(this)
-        ProcessLifecycleOwner.get().lifecycle.addObserver(this)
         appOpenAdManager = AppOpenAdManager()
 
         setStrictModePolicy()
@@ -96,17 +91,6 @@ class NiaApplication :
         // Initialize Sync; the system responsible for keeping data in the app up to date.
         Sync.initialize(context = this)
         profileVerifierLogger()
-    }
-
-    /**
-    * DefaultLifecycleObserver method that shows the app open ad when the app moves to foreground.
-    */
-    override fun onStart(owner: LifecycleOwner) {
-        super.onStart(owner)
-        currentActivity?.let {
-        // Show the ad (if available) when the app moves to foreground.
-        appOpenAdManager.showAdIfAvailable(it)
-        }
     }
 
     override fun newImageLoader(): ImageLoader = imageLoader.get()
@@ -188,8 +172,6 @@ class NiaApplication :
 
     private inner class AppOpenAdManager {
 
-        private var googleMobileAdsConsentManager: GoogleMobileAdsConsentManager =
-          GoogleMobileAdsConsentManager.getInstance(applicationContext)
         private var appOpenAd: AppOpenAd? = null
         private var isLoadingAd = false
         var isShowingAd = false
@@ -322,6 +304,8 @@ class NiaApplication :
                 Log.d(LOG_TAG, "==================================================")
                 
                 Toast.makeText(context, "onAdLoaded", Toast.LENGTH_SHORT).show()
+                
+                // 广告加载完成，只由 SplashActivity 控制显示时机
               }
     
               /**
@@ -460,9 +444,7 @@ class NiaApplication :
           if (!isAdAvailable()) {
             Log.d(LOG_TAG, "The app open ad is not ready yet.")
             onShowAdCompleteListener.onShowAdComplete()
-            if (googleMobileAdsConsentManager.canRequestAds) {
-              loadAd(activity)
-            }
+            loadAd(activity)
             return
           }
     
@@ -479,9 +461,7 @@ class NiaApplication :
                 Toast.makeText(activity, "onAdDismissedFullScreenContent", Toast.LENGTH_SHORT).show()
     
                 onShowAdCompleteListener.onShowAdComplete()
-                if (googleMobileAdsConsentManager.canRequestAds) {
-                  loadAd(activity)
-                }
+                loadAd(activity)
               }
     
               /** Called when fullscreen content failed to show. */
@@ -492,9 +472,7 @@ class NiaApplication :
                 Toast.makeText(activity, "onAdFailedToShowFullScreenContent", Toast.LENGTH_SHORT).show()
     
                 onShowAdCompleteListener.onShowAdComplete()
-                if (googleMobileAdsConsentManager.canRequestAds) {
-                  loadAd(activity)
-                }
+                loadAd(activity)
               }
     
               /** Called when fullscreen content is shown. */

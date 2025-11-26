@@ -2,43 +2,36 @@ package com.google.samples.apps.nowinandroid
 
 import android.content.Intent
 import android.os.Bundle
-import android.os.CountDownTimer
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.google.android.gms.ads.MobileAds
 import com.google.android.gms.ads.RequestConfiguration
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /** Splash Activity rendered with Jetpack Compose. */
 class SplashActivity : ComponentActivity() {
 
-  private lateinit var googleMobileAdsConsentManager: GoogleMobileAdsConsentManager
   private val isMobileAdsInitializeCalled = AtomicBoolean(false)
-  private val gatherConsentFinished = AtomicBoolean(false)
-  private var secondsRemaining: Long = 0L
-  private var countdownText by mutableStateOf("")
+  private var adShown = AtomicBoolean(false)
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
 
     setContent {
-      SplashCountdownScreen(text = countdownText)
+      SplashLoadingScreen()
     }
 
     // Log the Mobile Ads SDK version.
@@ -48,65 +41,64 @@ class SplashActivity : ComponentActivity() {
     Log.d(LOG_TAG, "Test Device ID: ${NiaApplication.TEST_DEVICE_HASHED_ID}")
     Log.d(LOG_TAG, "Mode: Production Ad Unit + Test Device (Real Ad Creatives)")
 
-    // Create a timer so the SplashActivity will be displayed for a fixed amount of time.
-    createTimer()
-
-    googleMobileAdsConsentManager = GoogleMobileAdsConsentManager.getInstance(applicationContext)
-    googleMobileAdsConsentManager.gatherConsent(this) { consentError ->
-      if (consentError != null) {
-        // Consent not obtained in current session.
-        Log.w(LOG_TAG, String.format("%s: %s", consentError.errorCode, consentError.message))
-      }
-
-      gatherConsentFinished.set(true)
-
-      if (googleMobileAdsConsentManager.canRequestAds) {
-        initializeMobileAdsSdk()
-      }
-
-      if (secondsRemaining <= 0) {
-        startMainActivity()
-      }
-    }
-
-    // This sample attempts to load ads using consent obtained in the previous session.
-    if (googleMobileAdsConsentManager.canRequestAds) {
-      initializeMobileAdsSdk()
-    }
+    // 直接初始化并加载广告，不需要用户同意
+    initializeMobileAdsSdk()
+    
+    // 启动协程检查广告状态并显示
+    checkAndShowAd()
   }
-
+  
   /**
-   * Create the countdown timer, which counts down to zero and show the app open ad.
-   *
-   * @param time the number of milliseconds that the timer counts down from
+   * 检查广告状态并显示
+   * 如果广告已加载完成，立即显示；否则等待加载完成
    */
-  private fun createTimer() {
-    val countDownTimer: CountDownTimer =
-      object : CountDownTimer(COUNTER_TIME_MILLISECONDS, 1000) {
-        override fun onTick(millisUntilFinished: Long) {
-          secondsRemaining = TimeUnit.MILLISECONDS.toSeconds(millisUntilFinished) + 1
-          countdownText = "App is done loading in: $secondsRemaining"
+  private fun checkAndShowAd() {
+    CoroutineScope(Dispatchers.Main).launch {
+      // 等待广告加载完成（最多等待10秒）
+      var waitedTime = 0L
+      val maxWaitTime = 10000L // 10秒
+      val checkInterval = 100L // 每100ms检查一次
+      
+      while (waitedTime < maxWaitTime) {
+        val niaApp = application as NiaApplication
+        val adResponseData = niaApp.currentAdResponseData
+        
+        // 如果广告加载失败，立即进入主界面
+        if (niaApp.lastLoadError != null && adResponseData == null) {
+          Log.d(LOG_TAG, "Ad loading failed, proceeding to main activity.")
+          if (!adShown.getAndSet(true)) {
+            startMainActivity()
+          }
+          return@launch
         }
-
-        override fun onFinish() {
-          secondsRemaining = 0
-          countdownText = "Done."
-
-          (application as NiaApplication).showAdIfAvailable(
+        
+        // 如果广告已加载完成，显示广告
+        if (adResponseData?.appOpenAd != null) {
+          Log.d(LOG_TAG, "Ad loaded, showing now.")
+          niaApp.showAdIfAvailable(
             this@SplashActivity,
             object : NiaApplication.OnShowAdCompleteListener {
               override fun onShowAdComplete() {
-                // Check if the consent form is currently on screen before moving to the main
-                // activity.
-                if (gatherConsentFinished.get()) {
+                // 广告显示完成后，直接进入主界面
+                if (!adShown.getAndSet(true)) {
                   startMainActivity()
                 }
               }
             }
           )
+          return@launch
         }
+        
+        delay(checkInterval)
+        waitedTime += checkInterval
       }
-    countDownTimer.start()
+      
+      // 超时后，如果没有广告，直接进入主界面
+      Log.d(LOG_TAG, "Ad loading timeout, proceeding to main activity.")
+      if (!adShown.getAndSet(true)) {
+        startMainActivity()
+      }
+    }
   }
 
   private fun initializeMobileAdsSdk() {
@@ -142,21 +134,17 @@ class SplashActivity : ComponentActivity() {
   }
 
   companion object {
-    // Number of milliseconds to count down before showing the app open ad. This simulates the time
-    // needed to load the app.
-    private const val COUNTER_TIME_MILLISECONDS = 10000L
-
     private const val LOG_TAG = "SplashActivity"
   }
 }
 
 @Composable
-private fun SplashCountdownScreen(text: String) {
+private fun SplashLoadingScreen() {
   Box(
     modifier =
       Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
     contentAlignment = Alignment.Center,
   ) {
-    Text(text = text.ifEmpty { " " }, style = MaterialTheme.typography.bodyLarge)
+    CircularProgressIndicator()
   }
 }
