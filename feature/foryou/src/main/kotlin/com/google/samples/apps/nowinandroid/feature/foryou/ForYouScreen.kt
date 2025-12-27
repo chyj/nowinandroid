@@ -244,23 +244,11 @@ internal fun ForYouScreen(
                 },
             )
 
-            // 在第一个位置显示原生广告
-            if (nativeAd != null) {
-                item(
-                    key = "native_ad_first",
-                    contentType = "nativeAd",
-                    span = StaggeredGridItemSpan.FullLine,
-                ) {
-                    Log.d("ForYouScreen", "📱 [广告] 在第一个位置显示广告")
-                    NativeAdCard(nativeAd = nativeAd)
-                }
-            }
-
             // 渲染新闻列表
             when (feedState) {
                 NewsFeedUiState.Loading -> Unit
                 is NewsFeedUiState.Success -> {
-                    feedState.feed.forEach { userNewsResource ->
+                    feedState.feed.forEachIndexed { index, userNewsResource ->
                         // 渲染新闻项
                         item(
                             key = userNewsResource.id,
@@ -294,6 +282,17 @@ internal fun ForYouScreen(
                                 onTopicClick = onTopicClick,
                                 modifier = Modifier.padding(horizontal = 8.dp),
                             )
+                        }
+                        
+                        // 在第二个位置（第一条新闻之后）显示原生广告
+                        if (index == 0 && nativeAd != null) {
+                            item(
+                                key = "native_ad_second",
+                                contentType = "nativeAd",
+                            ) {
+                                Log.d("ForYouScreen", "📱 [广告] 在第二个位置显示广告")
+                                NativeAdCard(nativeAd = nativeAd)
+                            }
                         }
                     }
                 }

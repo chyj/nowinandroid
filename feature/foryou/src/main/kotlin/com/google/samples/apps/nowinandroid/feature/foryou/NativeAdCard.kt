@@ -135,29 +135,12 @@ internal fun NativeAdCard(
                 Column {
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // 标题和应用图标行
+                    // 标题行 - 模仿新闻卡片样式
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.Top,
                     ) {
-                        // 应用图标（可选）
-                        nativeAd.icon?.let { icon ->
-                            Box(
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .clip(CircleShape),
-                            ) {
-                                AsyncImage(
-                                    model = icon.uri,
-                                    contentDescription = null,
-                                    modifier = Modifier.fillMaxWidth(),
-                                    contentScale = ContentScale.Crop,
-                                )
-                            }
-                        }
-
-                        // 标题
+                        // 标题 - 占用大部分宽度
                         Text(
                             text = nativeAd.headline ?: "",
                             style = MaterialTheme.typography.headlineSmall,
@@ -165,21 +148,35 @@ internal fun NativeAdCard(
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
                         )
+                        
+                        Spacer(modifier = Modifier.width(8.dp))
+                        
+                        // "赞助"标签 - 小而不明显，但符合广告政策
+                        Text(
+                            text = "赞助",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                            modifier = Modifier.padding(top = 4.dp),
+                        )
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
-                    // 广告主名称（可选）
-                    nativeAd.advertiser?.let { advertiser ->
+                    // 元数据行 - 模仿新闻卡片的日期和类型显示
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        // 使用广告主名称作为来源，如果没有则使用默认文本
                         Text(
-                            text = advertiser,
+                            text = nativeAd.advertiser ?: "推广内容",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                        Spacer(modifier = Modifier.height(4.dp))
                     }
 
-                    // 正文描述
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // 正文描述 - 模仿新闻卡片的短描述
                     nativeAd.body?.let { body ->
                         Text(
                             text = body,
@@ -187,67 +184,6 @@ internal fun NativeAdCard(
                             maxLines = 3,
                             overflow = TextOverflow.Ellipsis,
                         )
-                        Spacer(modifier = Modifier.height(12.dp))
-                    }
-
-                    // 评分、价格和商店信息行（可选）
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        // 评分（可选）
-                        nativeAd.starRating?.let { rating ->
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Text(
-                                    text = "★",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.primary,
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = String.format("%.1f", rating),
-                                    style = MaterialTheme.typography.labelMedium,
-                                )
-                            }
-                        }
-
-                        // 价格（可选）
-                        nativeAd.price?.let { price ->
-                            Text(
-                                text = price,
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
-                        }
-
-                        // 商店名称（可选）
-                        nativeAd.store?.let { store ->
-                            Text(
-                                text = store,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    // 行动号召按钮
-                    nativeAd.callToAction?.let { cta ->
-                        androidx.compose.material3.Button(
-                            onClick = { callToActionView.performClick() },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                            ),
-                        ) {
-                            Text(
-                                text = cta,
-                                style = MaterialTheme.typography.labelLarge,
-                            )
-                        }
                     }
                 }
             }
